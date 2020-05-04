@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>CU Opportunities</title>
+    <meta charset="UTF-8" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://se.penkra.com/apis/account.js"></script>
+    <script src="src/index.js"></script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+        fetchGETParams();
+        $("#create-team-btn").click(create_team);
+      });
+
+      var opportunity_id;
+
+      function fetchGETParams() {
+        const url_string = window.location.href;
+        const url = new URL(url_string);
+        const opportunity = url.searchParams.get("opportunity");
+        if (opportunity != null) {
+          $("#title").text(opportunity);
+          opportunity_id = url.searchParams.get("id");
+          fetch_teams();
+          // post = p;
+          // $.post('get-opportunity.php', {post : post}, function(msg){
+          //     const m = JSON.parse(msg);
+          //     const u = getOneUser(m.uid);
+          //     setUpUser(u.fname, u.lname);
+          //     $("#text_field").text(m.post);
+          //     link = m.link;
+          //     if (getUserData('id') == m.uid || getUserData('isTeacher')) $("#edit_btn").show();
+          // });
+        }
+      }
+
+      function fetch_teams() {
+        $.post(
+          "https://se.penkra.com/jalena/fetch-teams",
+          { opportunity_id: opportunity_id },
+          function(msg) {
+            let json = JSON.parse(msg);
+            let teams = json.teams;
+            teams.forEach(function(team) {
+              if (getUserData("id") == team.team_admin)
+                $("#create-team-btn").hide();
+              let admin = getOneUser(team.team_admin);
+              let template =
+                '<div class="team"><div class="admin">' +
+                admin.fname +
+                " " +
+                admin.lname +
+                "</div>";
+              template += '<div class="members">';
+              let members = team.team_members;
+              let isMember = false;
+              members.forEach(function(member) {
+                if (member == getUserData("id")) isMember = true;
+                let m = getOneUser(member);
+                template +=
+                  '<div class="member">- ' + m.fname + " " + m.lname + "</div>";
+              });
+              if (getUserData("id") == team.team_admin)
+                template +=
+                  '<button onclick="delete_team(' +
+                  team.team_id +
+                  ');">Delete</button>';
+              else if (isMember)
+                template +=
+                  '<button onclick="exit_from_team(' +
+                  team.team_id +
+                  ');">Exit</button>';
+              else
+                template +=
+                  '<button onclick="join_team(' +
+                  team.team_id +
+                  ');">Join</button>';
+              template += "</div></div>";
+              $("#teams").append(template);
+            });
+          }
+        );
+      }
+
+      function delete_team($team_id) {
+        $.post(
+          "https://se.penkra.com/jalena/delete-team",
+          { team_id: $team_id },
+          function(msg) {
+            alert("Successfully deleted team");
+            location.reload();
+          }
+        );
+      }
+
+      function exit_from_team($team_id) {
+        $.post(
+          "https://se.penkra.com/jalena/exit-from-team",
+          { team_id: $team_id, user_id: getUserData("id") },
+          function(msg) {
+            alert("Successfully exited");
+            location.reload();
+          }
+        );
+      }
+
+      function join_team($team_id) {
+        $.post(
+          "https://se.penkra.com/jalena/join-team",
+          { team_id: $team_id, user_id: getUserData("id") },
+          function(msg) {
+            alert("Successfully joined");
+            location.reload();
+          }
+        );
+      }
+
+      function create_team() {
+        $.post(
+          "https://se.penkra.com/jalena/create-team",
+          {
+            opportunity_id: opportunity_id,
+            user_id: getUserData("id")
+          },
+          function(msg) {
+            alert("Your team has been created successfully");
+            location.reload();
+          }
+        );
+      }
+    </script>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://se.penkra.com/style.css"
+    />
+  </head>
+
+  <body>
+    <h1 id="title"></h1>
+    <button id="create-team-btn">Create Team</button>
+    <!-- <div id="app"></div> -->
+    <div id="teams"></div>
+    <br />
+    <br />
+    <!-- TEMPLATE BELOW -->
+    <!-- <div class="team">
+      <div class="admin">Jalena Jones</div>
+      <div class="members">
+        <div class="member">- Emmanuel Penkra</div>
+        <div class="member">- Jalena</div>
+      </div>
+      <button>Delete</button>
+      <button>Join</button>
+      <button>Exit</button>
+    </div> -->
+    <script src="src/teamReg.js"></script>
+  </body>
+</html>
